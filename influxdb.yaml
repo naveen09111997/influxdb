@@ -1,0 +1,59 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: influx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    labels:
+        app: influxdb
+    name: influxdb
+    namespace: influx
+spec:
+    selector:
+        matchLabels:
+            app: influxdb
+    serviceName: influxdb
+    template:
+        metadata:
+            labels:
+                app: influxdb
+        spec:
+            containers:      
+              - image: influxdb:2.4.0
+                name: influxdb
+                ports:
+                  - containerPort: 8086
+                    name: influxdb                      
+                volumeMounts:
+                  - mountPath: /var/lib/influxdb2
+                    name: data_influx
+    volumeClaimTemplates:
+      - metadata:
+            name: data_influx
+            namespace: influx
+        spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: "microk8s-hostpath"
+            resources:
+                requests:
+                    storage: 20G
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: influxdb
+    namespace: influx
+spec:
+    ports:
+      - name: influxdb
+        port: 8086
+        targetPort: 8086
+        nodePort: 30886
+    selector:
+        app: influxdb
+    type: NodePort
